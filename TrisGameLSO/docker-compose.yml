@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    container_name: server
+    ports:
+      - "10000:10000"  # Mappa la porta 10000 del container sulla porta 10000 dell'host
+    stdin_open: true  # Mantiene l'input aperto per l'interazione
+    tty: true         # Mantiene il terminale attivo
+    command: ["./server", "10000", "0.0.0.0", "5"]  # Ascolta su tutte le interfacce
+
+  client:
+    build:
+      context: ./client
+      dockerfile: dockerfile
+    container_name: client
+    depends_on:
+      - server
+    stdin_open: true  # Mantiene l'input aperto per l'interazione
+    tty: true         # Mantiene il terminale attivo
+    command: ["./client", "server", "10000", "50"]  # Usa il nome del servizio del server come host
