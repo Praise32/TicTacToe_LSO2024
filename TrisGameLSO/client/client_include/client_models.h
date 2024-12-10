@@ -8,8 +8,10 @@ typedef struct {
 } GameState;
 
 // Costanti di configurazione
-#define SERVER_PORT 8080
+#define SERVER_PORT 10000
 #define SERVER_IP "127.0.0.1"
+
+extern int server_socket;
 
 // Funzioni generali (dichiarate in connection.c)
 void connect_to_server();

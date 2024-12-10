@@ -5,8 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 
-extern int server_socket;
-
 int main() {
     print_welcome_message();
 

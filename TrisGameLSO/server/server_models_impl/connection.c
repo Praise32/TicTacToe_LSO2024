@@ -24,6 +24,7 @@ void start_server(int port) {
         perror("Errore nel bind del socket");
         exit(1);
     }
+    printf(COLOR_GREEN "Socket bind completato con successo sulla porta %d\n" COLOR_RESET, port);
 
     if (listen(server_socket, 10) < 0) {
         perror("Errore nel listen");
@@ -31,3 +32,4 @@ void start_server(int port) {
     }
     printf(COLOR_GREEN "Server in ascolto sulla porta %d\n" COLOR_RESET, port);
 }
+

@@ -4,6 +4,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/socket.h>
+
+pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *handle_client(void *client_socket) {
     int socket = *(int *)client_socket;
@@ -17,14 +20,18 @@ void *handle_client(void *client_socket) {
             break;
         }
         buffer[bytes_received] = '\0';
+
+        pthread_mutex_lock(&session_mutex);
         printf(COLOR_YELLOW "Messaggio dal client: %s\n" COLOR_RESET, buffer);
+        pthread_mutex_unlock(&session_mutex);
     }
 
     return NULL;
 }
 
+
 int main() {
-    start_server(8080);
+    start_server(10000);
     printf(COLOR_GREEN "Server avviato con successo!\n" COLOR_RESET);
 
     while (1) {

@@ -1,6 +1,8 @@
 #include "../server_include/server_models.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 
 void init_game(GameSession *game, int player1_socket) {
     game->id = rand() % 10000; // Generazione di un ID univoco

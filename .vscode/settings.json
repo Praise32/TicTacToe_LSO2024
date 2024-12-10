@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "client_models.h": "c"
+        "client_models.h": "c",
+        "stdio.h": "c",
+        "colors.h": "c",
+        "server_models.h": "c",
+        "stdlib.h": "c"
     }
 }
