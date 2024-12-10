@@ -7,7 +7,7 @@ typedef struct {
     int current_turn;     // Giocatore corrente (1 o 2)
 } GameState;
 
-// Costanti di stato
+// Costanti di configurazione
 #define SERVER_PORT 8080
 #define SERVER_IP "127.0.0.1"
 
@@ -15,5 +15,8 @@ typedef struct {
 void connect_to_server();
 void send_message_to_server(const char *message);
 void receive_message_from_server(char *buffer, int buffer_size);
+
+// Funzioni specifiche del gioco
+void receive_game_board(char board[3][3]);
 
 #endif
