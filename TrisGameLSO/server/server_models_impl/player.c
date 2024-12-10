@@ -1,16 +1,74 @@
-#include "../server_include/server_models.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include "../server_include/server_models.h"
 
-void init_player(Player *player, int id, int socket, const char *name) {
-    player->id = id;
-    player->socket = socket;
-    strncpy(player->name, name, sizeof(player->name) - 1);
-    player->current_game_id = -1; // Nessuna partita attualmente
-    player->is_playing = 0;
+// Funzione per creare un nuovo giocatore
+int crea_giocatore(int socket_fd, char simbolo) {
+    static int id_counter = 1;  // Contatore per gli ID dei giocatori
+    Giocatore *giocatore = malloc(sizeof(Giocatore));
+    if (giocatore == NULL) {
+        perror("Errore nell'allocazione della memoria per il giocatore");
+        return -1;
+    }
+
+    // Assegna un ID unico al giocatore
+    giocatore->id = id_counter++;
+    giocatore->socket_fd = socket_fd;
+    giocatore->simbolo = simbolo;
+    giocatore->partita_attiva = -1;  // Nessuna partita attiva inizialmente
+
+    printf("Giocatore creato con ID: %d, simbolo: %c\n", giocatore->id, giocatore->simbolo);
+    return giocatore->id;
 }
 
-void display_player_info(Player *player) {
-    printf("Giocatore: ID=%d, Nome=%s, Socket=%d, Partita=%d, In Gioco=%d\n", 
-           player->id, player->name, player->socket, player->current_game_id, player->is_playing);
+// Funzione per aggiungere un giocatore a una partita
+int aggiungi_giocatore_a_partita(Giocatore *giocatore, Partita *partita) {
+    pthread_mutex_lock(&partita->mutex);
+
+    if (partita->giocatore_1 == NULL) {
+        partita->giocatore_1 = giocatore;
+        giocatore->partita_attiva = partita->id;
+        printf("Giocatore %d (simbolo %c) è stato aggiunto come Giocatore 1 alla partita %d\n",
+               giocatore->id, giocatore->simbolo, partita->id);
+    } else if (partita->giocatore_2 == NULL) {
+        partita->giocatore_2 = giocatore;
+        giocatore->partita_attiva = partita->id;
+        printf("Giocatore %d (simbolo %c) è stato aggiunto come Giocatore 2 alla partita %d\n",
+               giocatore->id, giocatore->simbolo, partita->id);
+    } else {
+        // La partita è già completa
+        pthread_mutex_unlock(&partita->mutex);
+        return -1;  // Partita piena
+    }
+
+    pthread_mutex_unlock(&partita->mutex);
+    return 0;  // Successo
 }
+
+// Funzione per rimuovere un giocatore da una partita
+void rimuovi_giocatore_da_partita(Giocatore *giocatore) {
+    Partita *partita = // Cerca la partita a cui il giocatore è associato
+    // Logica per trovare la partita tramite l'ID
+
+    if(partita != NULL) {
+        pthread_mutex_lock(&partita->mutex);
+
+        if (partita->giocatore_1 == giocatore) {
+            partita->giocatore_1 = NULL;
+        } else if (partita->giocatore_2 == giocatore) {
+            partita->giocatore_2 = NULL;
+        }
+
+        giocatore->partita_attiva = -1;  // Resetta la partita attiva
+        pthread_mutex_unlock(&partita->mutex);
+
+        printf("Giocatore %d rimosso dalla partita %d\n", giocatore->id, partita->id);
+    } else {
+        printf("Giocatore %d non è associato a nessuna partita.\n", giocatore->id);
+    }
+
+    free(giocatore);
+}
+
