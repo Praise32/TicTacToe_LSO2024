@@ -2,27 +2,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-GameSession active_sessions[10];
-
-void init_session(GameSession *session, int player_socket) {
-    session->player1_socket = player_socket;
-    session->player2_socket = -1; // In attesa del secondo giocatore
-    init_game(session, player_socket);
-}
-
-void add_player_to_session(GameSession *session, int player_socket) {
-    if (session->player2_socket == -1) {
-        session->player2_socket = player_socket;
+void init_game_manager(GameManager *manager) {
+    for (int i = 0; i < MAX_GAMES; i++) {
+        manager->games[i] = NULL;
     }
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        manager->players[i] = NULL;
+    }
+    pthread_mutex_init(&manager->global_mutex, NULL);
 }
 
-void display_sessions() {
-    for (int i = 0; i < 10; i++) {
-        if (active_sessions[i].player1_socket != -1) {
-            printf("Sessione attiva: ID %d, Player 1: %d, Player 2: %d\n", 
-                active_sessions[i].id, 
-                active_sessions[i].player1_socket, 
-                active_sessions[i].player2_socket);
+int add_player(GameManager *manager, Player *player) {
+    pthread_mutex_lock(&manager->global_mutex);
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        if (manager->players[i] == NULL) {
+            manager->players[i] = player;
+            pthread_mutex_unlock(&manager->global_mutex);
+            return 1; // Giocatore aggiunto con successo
         }
     }
+    pthread_mutex_unlock(&manager->global_mutex);
+    return 0; // Impossibile aggiungere il giocatore
+}
+
+int create_game(GameManager *manager, Player *player) {
+    pthread_mutex_lock(&manager->global_mutex);
+    for (int i = 0; i < MAX_GAMES; i++) {
+        if (manager->games[i] == NULL) {
+            GameSession *game = (GameSession *)malloc(sizeof(GameSession));
+            init_game(game, i, player);
+            manager->games[i] = game;
+            player->current_game_id = i;
+            pthread_mutex_unlock(&manager->global_mutex);
+            return i; // ID della nuova partita
+        }
+    }
+    pthread_mutex_unlock(&manager->global_mutex);
+    return -1; // Impossibile creare una nuova partita
 }

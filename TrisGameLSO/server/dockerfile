@@ -18,4 +18,4 @@ RUN make clean && make run_server
 EXPOSE 10000
 
 # Comando di avvio del server
-CMD ["./server", "10000", "127.0.0.1", "5"]
+CMD ["./server", "10000", "locahost", "5"]

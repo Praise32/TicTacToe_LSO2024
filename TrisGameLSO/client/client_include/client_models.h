@@ -1,24 +1,29 @@
-#ifndef CLIENT_MODELS_H
-#define CLIENT_MODELS_H
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include "gui.h"
+#include "time.h"
 
-// Struttura per rappresentare il tabellone
-typedef struct {
-    char board[3][3];     // Tabellone 3x3
-    int current_turn;     // Giocatore corrente (1 o 2)
-} GameState;
+// Per il client
+void get_server_info(int argc, char *argv[], char *server_name, int *server_port, int* num_players);
+int connect_to_server(const char *server_name, int server_port);
+void generate_client_params(int *time_to_respond);
 
-// Costanti di configurazione
-#define SERVER_PORT 10000
-#define SERVER_IP "127.0.0.1"
+// Funzioni per la gestione delle partite di Tris
+int create_game(int socket_fd);
+int join_game(int socket_fd);
+void play_game(int socket_fd);
+int send_move(int socket_fd, int row, int col);
+void receive_game_update(int socket_fd, char *buffer);
+void handle_game_end(int socket_fd, const char *game_status);
 
-extern int server_socket;
+// Funzioni di gestione dei messaggi
+void receive_message_from_server(int socket_fd, char *buffer);
 
-// Funzioni generali (dichiarate in connection.c)
-void connect_to_server();
-void send_message_to_server(const char *message);
-void receive_message_from_server(char *buffer, int buffer_size);
-
-// Funzioni specifiche del gioco
-void receive_game_board(char board[3][3]);
-
-#endif
+// Funzioni per la chiusura delle risorse
+void close_resources(int socket_fd);

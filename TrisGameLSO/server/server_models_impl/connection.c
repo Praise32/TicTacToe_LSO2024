@@ -1,12 +1,7 @@
 #include "../server_include/server_models.h"
 #include "../server_include/colors.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <pthread.h>
 
-int server_socket;
+int server_socket; // Variabile globale definita qui
 
 void start_server(int port) {
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -24,12 +19,30 @@ void start_server(int port) {
         perror("Errore nel bind del socket");
         exit(1);
     }
-    printf(COLOR_GREEN "Socket bind completato con successo sulla porta %d\n" COLOR_RESET, port);
 
     if (listen(server_socket, 10) < 0) {
         perror("Errore nel listen");
         exit(1);
     }
+
     printf(COLOR_GREEN "Server in ascolto sulla porta %d\n" COLOR_RESET, port);
 }
 
+void accept_connections(int socket_fd) {
+    while (1) {
+        int client_socket = accept(socket_fd, NULL, NULL);
+        if (client_socket < 0) {
+            perror("Errore nell'accettazione del client");
+            continue;
+        }
+        printf(COLOR_BLUE "Nuovo client connesso con socket %d\n" COLOR_RESET, client_socket);
+    }
+}
+
+// Gestore del segnale SIGINT
+void signal_handler(int signal_number) {
+    if (signal_number == SIGINT) {
+        printf("SIGINT received. Shutting down server.\n");
+        exit(0);
+    }
+}

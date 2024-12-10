@@ -1,20 +1,19 @@
 #include "../client_include/client_models.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <unistd.h>
 
-extern int server_socket; // Definito in connection.c
+#define BUFFER_SIZE 1024
 
-void receive_game_board(char board[3][3]) {
-    char buffer[1024];
-    receive_message_from_server(buffer, sizeof(buffer));
-
-    // Parsing della stringa ricevuta (es. "X,O,_,_,X,O,_,_,_")
-    char *token = strtok(buffer, ",");
-    for (int i = 0; i < 3 && token != NULL; i++) {
-        for (int j = 0; j < 3 && token != NULL; j++) {
-            board[i][j] = token[0];
-            token = strtok(NULL, ",");
-        }
-    }
+void receive_message_from_server(int socket_fd, char *buffer) {
+  ssize_t bytes_read = read(socket_fd, buffer, BUFFER_SIZE);
+  if (bytes_read == -1) {
+    perror("read");
+    close(socket_fd);
+    exit(1);
+  } else if (bytes_read == 0) {
+  } else {
+    buffer[bytes_read] = '\0'; //Termina con null per stampare in modo sicuro come una stringa
+  }
 }

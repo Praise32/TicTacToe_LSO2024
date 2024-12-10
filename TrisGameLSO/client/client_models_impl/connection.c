@@ -1,43 +1,74 @@
-#include "../client_include/client_models.h"
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-int server_socket; // Socket globale
+#define SERVER_NAME_LEN_MAX 256
 
-void connect_to_server() {
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket < 0) {
-        perror("Errore nella creazione del socket");
-        exit(EXIT_FAILURE);
-    }
+int connect_to_server(const char *server_name, int server_port) {
+  int socket_fd;
+  struct hostent *server_host;
+  struct sockaddr_in server_address;
 
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SERVER_PORT);
-    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+  /* Get server host from server name. */
+  server_host = gethostbyname(server_name);
+  if (!server_host) {
+    fprintf(stderr, "Could not resolve host\n");
+    exit(1);
+  }
 
-    if (connect(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Errore di connessione al server");
-        exit(EXIT_FAILURE);
-    }
-    printf("Connesso al server!\n");
+  /* Inizializza server*/
+  memset(&server_address, 0, sizeof server_address);
+  server_address.sin_family = AF_INET;
+  server_address.sin_port = htons(server_port);
+  memcpy(&server_address.sin_addr.s_addr, server_host->h_addr,
+         server_host->h_length);
+
+  /* Crea TCP socket */
+  if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    perror("socket");
+    exit(1);
+  }
+
+  /* Connect to server */
+  if (connect(socket_fd, (struct sockaddr *)&server_address,
+              sizeof server_address) == -1) {
+    perror("connect");
+    close(socket_fd);
+    exit(1);
+  }
+
+  return socket_fd;
 }
 
-void send_message_to_server(const char *message) {
-    if (send(server_socket, message, strlen(message), 0) < 0) {
-        perror("Errore durante l'invio del messaggio");
-    }
-}
+void get_server_info(int argc, char *argv[], char *server_name,
+                     int *server_port, int *num_players) {
+  if (argc > 1) {
+    strncpy(server_name, argv[1], SERVER_NAME_LEN_MAX);
+  } else {
+    fprintf(stderr, "Uso: %s <nome_server> <nome_port> <num_clienti>\n",
+            argv[0]);
+    exit(1);
+  }
 
-void receive_message_from_server(char *buffer, int buffer_size) {
-    int bytes_received = recv(server_socket, buffer, buffer_size, 0);
-    if (bytes_received < 0) {
-        perror("Errore durante la ricezione del messaggio");
-    } else {
-        buffer[bytes_received] = '\0';
-    }
+  if (argc > 2) {
+    *server_port = atoi(argv[2]);
+  } else {
+    fprintf(stderr, "Uso: %s <nome_server> <nome_port> <num_clienti>\n",
+            argv[0]);
+    exit(1);
+  }
+
+  if (argc > 3) {
+    *num_players = atoi(argv[3]);
+  } else {
+    fprintf(stderr, "Uso: %s <nome_server> <nome_port> <num_clienti>\n",
+            argv[0]);
+    exit(1);
+  }
 }

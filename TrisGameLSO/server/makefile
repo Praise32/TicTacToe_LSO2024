@@ -1,47 +1,26 @@
-# Variabili
-CC = gcc
-CFLAGS = -Wall -pthread -g
-TARGET = server
+# Obiettivo principale
+server: server.o session.o game.o player.o connection.o
+	 gcc -pthread server.o session.o game.o player.o connection.o -o server
 
-# File sorgenti
-SRC = server.c server_models_impl/connection.c server_models_impl/game.c \
-      server_models_impl/player.c server_models_impl/session.c
+# Compilazione dei file sorgente
+server.o: 
+	 gcc -c -pthread server.c -o server.o
 
-# File oggetto
-OBJ = server.o server_models_impl/connection.o server_models_impl/game.o \
-      server_models_impl/player.o server_models_impl/session.o
+connection.o:
+	gcc -c -pthread server_models_impl/connection.c -o connection.o
 
-# Obiettivo predefinito
-all: $(TARGET)
+session.o: 
+	 gcc -c -pthread server_models_impl/session.c -o session.o
 
-# Regola per creare l'eseguibile
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+game.o: 
+	 gcc -c -pthread server_models_impl/game.c -o game.o
 
-# Regola per compilare server.c
-server.o: server.c
-	$(CC) $(CFLAGS) -c server.c -o server.o
+player.o: 
+	 gcc -c -pthread server_models_impl/player.c -o player.o
 
-# Regola per compilare connection.c
-server_models_impl/connection.o: server_models_impl/connection.c
-	$(CC) $(CFLAGS) -c server_models_impl/connection.c -o server_models_impl/connection.o
-
-# Regola per compilare game.c
-server_models_impl/game.o: server_models_impl/game.c
-	$(CC) $(CFLAGS) -c server_models_impl/game.c -o server_models_impl/game.o
-
-# Regola per compilare player.c
-server_models_impl/player.o: server_models_impl/player.c
-	$(CC) $(CFLAGS) -c server_models_impl/player.c -o server_models_impl/player.o
-
-# Regola per compilare session.c
-server_models_impl/session.o: server_models_impl/session.c
-	$(CC) $(CFLAGS) -c server_models_impl/session.c -o server_models_impl/session.o
-
-# Esegui il server
-run_server: $(TARGET)
-	./server 10000 127.0.0.1 5
-
-# Pulisce i file oggetto e l'eseguibile
+# Pulizia dei file oggetto e dell'eseguibile
 clean:
-	rm -f $(TARGET) $(OBJ)
+	 rm -f server.o session.o game.o player.o server connection.o
+
+run_server: server
+	./server 10000 127.0.0.1 5

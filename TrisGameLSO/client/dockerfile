@@ -18,4 +18,4 @@ RUN make clean && make run_client
 EXPOSE 10000
 
 # Comando di avvio del client
-CMD ["./client", "127.0.0.1", "10000", "20"]
+CMD ["./client", "server", "10000", "1"]

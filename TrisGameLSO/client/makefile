@@ -1,41 +1,20 @@
-# Variabili
-CC = gcc
-CFLAGS = -Wall -pthread -g
-TARGET = client
+client: client.o receive.o connection.o gui.o
+	gcc client.o client_models_impl/receive.o client_models_impl/connection.o client_models_impl/gui.o -o client
 
-# File sorgenti
-SRC = client.c client_models_impl/receive.c client_models_impl/connection.c client_models_impl/gui.c
+client.o:
+	 gcc -c client.c -o client.o
 
-# File oggetto
-OBJ = client.o client_models_impl/receive.o client_models_impl/connection.o client_models_impl/gui.o
+receive.o:
+	 gcc -c client_models_impl/receive.c -o client_models_impl/receive.o
 
-# Obiettivo predefinito
-all: $(TARGET)
+connection.o:
+	 gcc -c client_models_impl/connection.c -o client_models_impl/connection.o
 
-# Regola per creare l'eseguibile
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+gui.o:
+	 gcc -c client_models_impl/gui.c -o client_models_impl/gui.o
 
-# Regola per compilare il client
-client.o: client.c
-	$(CC) $(CFLAGS) -c client.c -o client.o
-
-# Regola per compilare receive.c
-client_models_impl/receive.o: client_models_impl/receive.c
-	$(CC) $(CFLAGS) -c client_models_impl/receive.c -o client_models_impl/receive.o
-
-# Regola per compilare connection.c
-client_models_impl/connection.o: client_models_impl/connection.c
-	$(CC) $(CFLAGS) -c client_models_impl/connection.c -o client_models_impl/connection.o
-
-# Regola per compilare gui.c
-client_models_impl/gui.o: client_models_impl/gui.c
-	$(CC) $(CFLAGS) -c client_models_impl/gui.c -o client_models_impl/gui.o
-
-# Esegui il client
-run_client: $(TARGET)
+run_client: client
 	./client 127.0.0.1 10000 20
 
-# Pulisce i file oggetto e l'eseguibile
 clean:
-	rm -f $(TARGET) $(OBJ)
+	rm -f client client.o client_models_impl/gui.o client_models_impl/receive.o client_models_impl/connection.o
