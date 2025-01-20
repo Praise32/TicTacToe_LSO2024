@@ -14,7 +14,7 @@ void print_welcome_message() {
     printf("|                                                       |\n");
     printf("|          🎉 Benvenuto al Gioco del Tris! 🎉           |\n");
     printf("|                                                       |\n");
-    printf("|        🕹️ Gioca con amici e dimostra il tuo 🧠         |\n");
+    printf("|        🕹️ Gioca con amici e dimostra il tuo 🧠        |\n");
     printf("|                                                       |\n");
     printf("|    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    |\n");
     printf("|      🟡 🟡 🟡 Creazione e partecipazione ai giochi    |\n");

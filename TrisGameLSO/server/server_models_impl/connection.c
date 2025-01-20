@@ -1,48 +1,33 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 #include "../server_include/server_models.h"
-#include "../server_include/colors.h"
 
-int server_socket; // Variabile globale definita qui
+void setup_server_socket(int port, int *server_fd) {
+    struct sockaddr_in server_addr;
 
-void start_server(int port) {
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket < 0) {
-        perror("Errore nella creazione del socket");
-        exit(1);
+    *server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (*server_fd == -1) {
+        perror("Errore creazione socket");
+        exit(EXIT_FAILURE);
     }
 
-    struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Errore nel bind del socket");
-        exit(1);
+    if (bind(*server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Errore binding socket");
+        close(*server_fd);
+        exit(EXIT_FAILURE);
     }
 
-    if (listen(server_socket, 10) < 0) {
-        perror("Errore nel listen");
-        exit(1);
+    if (listen(*server_fd, MAX_CLIENTS) < 0) {
+        perror("Errore listen");
+        close(*server_fd);
+        exit(EXIT_FAILURE);
     }
 
-    printf(COLOR_GREEN "Server in ascolto sulla porta %d\n" COLOR_RESET, port);
-}
-
-void accept_connections(int socket_fd) {
-    while (1) {
-        int client_socket = accept(socket_fd, NULL, NULL);
-        if (client_socket < 0) {
-            perror("Errore nell'accettazione del client");
-            continue;
-        }
-        printf(COLOR_BLUE "Nuovo client connesso con socket %d\n" COLOR_RESET, client_socket);
-    }
-}
-
-// Gestore del segnale SIGINT
-void signal_handler(int signal_number) {
-    if (signal_number == SIGINT) {
-        printf("SIGINT received. Shutting down server.\n");
-        exit(0);
-    }
+    printf(GREEN_COLOR "Server in ascolto sulla porta %d\n" RESET_COLOR, port);
 }

@@ -1,26 +1,27 @@
-# Obiettivo principale
-server: server.o session.o game.o player.o connection.o
-	 gcc -pthread server.o session.o game.o player.o connection.o -o server
+# Compilazione del server
+server: server.o session.o game.o player.o connection.o client_handler.o
+	gcc -pthread server.o session.o game.o player.o connection.o client_handler.o -o server
 
-# Compilazione dei file sorgente
-server.o: 
-	 gcc -c -pthread server.c -o server.o
+server.o: server.c
+	gcc -c -pthread server.c -o server.o
 
-connection.o:
+session.o: server_models_impl/session.c
+	gcc -c -pthread server_models_impl/session.c -o session.o
+
+game.o: server_models_impl/game.c
+	gcc -c -pthread server_models_impl/game.c -o game.o
+
+player.o: server_models_impl/player.c
+	gcc -c -pthread server_models_impl/player.c -o player.o
+
+connection.o: server_models_impl/connection.c
 	gcc -c -pthread server_models_impl/connection.c -o connection.o
 
-session.o: 
-	 gcc -c -pthread server_models_impl/session.c -o session.o
+client_handler.o: server_models_impl/client_handler.c
+	gcc -c -pthread server_models_impl/client_handler.c -o client_handler.o
 
-game.o: 
-	 gcc -c -pthread server_models_impl/game.c -o game.o
-
-player.o: 
-	 gcc -c -pthread server_models_impl/player.c -o player.o
-
-# Pulizia dei file oggetto e dell'eseguibile
 clean:
-	 rm -f server.o session.o game.o player.o server connection.o
+	rm -f server server.o session.o game.o player.o connection.o client_handler.o
 
 run_server: server
-	./server 10000 127.0.0.1 5
+	./server 10000
