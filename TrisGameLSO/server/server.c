@@ -17,6 +17,9 @@
 
 int server_socket;
 
+// Declare client_handler as external
+extern void *client_handler(void *arg);
+
 void start_server(int port) {
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {
@@ -40,34 +43,6 @@ void start_server(int port) {
     }
 
     printf(COLOR_GREEN "Server in ascolto sulla porta %d\n" COLOR_RESET, port);
-}
-
-void *client_handler(void *arg) {
-    int client_socket = *(int *)arg;
-    char buffer[BUFFER_SIZE];
-
-    // Example client interaction (you can expand this based on game logic)
-    while (1) {
-        memset(buffer, 0, BUFFER_SIZE);
-        int received = recv(client_socket, buffer, BUFFER_SIZE, 0);
-        if (received <= 0) {
-            perror("Errore nella ricezione dei dati");
-            close(client_socket);
-            return NULL;
-        }
-        
-        // Handle messages (create game, join game, make move, etc.)
-        if (strncmp(buffer, "create_game", 11) == 0) {
-            // Logic to create a game
-            printf("Creazione della partita richiesta\n");
-        } else if (strncmp(buffer, "join_game", 9) == 0) {
-            // Logic to join an existing game
-            printf("Unione a partita richiesta\n");
-        }
-        // Add more cases for different actions (move, exit game, etc.)
-    }
-
-    return NULL;
 }
 
 void accept_connections(int socket_fd, SessionePartite *sessione) {
@@ -113,12 +88,35 @@ void signal_handler(int signal_number) {
     }
 }
 
+void initialize_server(SessionePartite *sessione) {
+    memset(sessione, 0, sizeof(SessionePartite));
+    pthread_mutex_init(&sessione->mutex_partite, NULL);
+    for (int i = 0; i < MAX_GAMES; i++) {
+        sessione->partite[i] = NULL;
+    }
+    sessione->num_partite = 0;
+}
+
+void cleanup_server(SessionePartite *sessione) {
+    for (int i = 0; i < sessione->num_partite; i++) {
+        if (sessione->partite[i] != NULL) {
+            pthread_mutex_destroy(&sessione->partite[i]->mutex);
+            pthread_cond_destroy(&sessione->partite[i]->cond);
+            free(sessione->partite[i]);
+        }
+    }
+    pthread_mutex_destroy(&sessione->mutex_partite);
+}
+
 int main(int argc, char *argv[]) {
     int server_port = (argc > 1) ? atoi(argv[1]) : 8080;  // Default port 8080
     signal(SIGINT, signal_handler);  // Register signal handler
 
+    SessionePartite sessione;
+    initialize_server(&sessione);
     start_server(server_port);  // Start the server
-    accept_connections(server_socket);  // Accept incoming connections
+    accept_connections(server_socket, &sessione);  // Accept incoming connections
+    cleanup_server(&sessione);
 
     return 0;
 }

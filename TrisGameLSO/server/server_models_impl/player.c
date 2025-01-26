@@ -4,13 +4,16 @@
 #include <pthread.h>
 #include "../server_include/server_models.h"
 
+// Dichiarazione della funzione get_sessione_partite
+SessionePartite* get_sessione_partite();
+
 // Funzione per creare un nuovo giocatore
-int crea_giocatore(int socket_fd, char simbolo) {
+Giocatore* crea_giocatore(int socket_fd, char simbolo) {
     static int id_counter = 1;  // Contatore per gli ID dei giocatori
     Giocatore *giocatore = malloc(sizeof(Giocatore));
     if (giocatore == NULL) {
         perror("Errore nell'allocazione della memoria per il giocatore");
-        return -1;
+        return NULL;
     }
 
     // Assegna un ID unico al giocatore
@@ -19,8 +22,7 @@ int crea_giocatore(int socket_fd, char simbolo) {
     giocatore->simbolo = simbolo;
     giocatore->partita_attiva = -1;  // Nessuna partita attiva inizialmente
 
-    printf("Giocatore creato con ID: %d, simbolo: %c\n", giocatore->id, giocatore->simbolo);
-    return giocatore->id;
+    return giocatore;
 }
 
 // Funzione per aggiungere un giocatore a una partita
@@ -38,9 +40,8 @@ int aggiungi_giocatore_a_partita(Giocatore *giocatore, Partita *partita) {
         printf("Giocatore %d (simbolo %c) è stato aggiunto come Giocatore 2 alla partita %d\n",
                giocatore->id, giocatore->simbolo, partita->id);
     } else {
-        // La partita è già completa
         pthread_mutex_unlock(&partita->mutex);
-        return -1;  // Partita piena
+        return -1;  // La partita è piena
     }
 
     pthread_mutex_unlock(&partita->mutex);
@@ -49,10 +50,18 @@ int aggiungi_giocatore_a_partita(Giocatore *giocatore, Partita *partita) {
 
 // Funzione per rimuovere un giocatore da una partita
 void rimuovi_giocatore_da_partita(Giocatore *giocatore) {
-    Partita *partita = // Cerca la partita a cui il giocatore è associato
-    // Logica per trovare la partita tramite l'ID
+    SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
+    Partita *partita = NULL;
 
-    if(partita != NULL) {
+    // Cerca la partita a cui il giocatore è associato
+    for (int i = 0; i < sessione->num_partite; i++) {
+        if (sessione->partite[i]->id == giocatore->partita_attiva) {
+            partita = sessione->partite[i];
+            break;
+        }
+    }
+
+    if (partita != NULL) {
         pthread_mutex_lock(&partita->mutex);
 
         if (partita->giocatore_1 == giocatore) {
@@ -71,4 +80,3 @@ void rimuovi_giocatore_da_partita(Giocatore *giocatore) {
 
     free(giocatore);
 }
-

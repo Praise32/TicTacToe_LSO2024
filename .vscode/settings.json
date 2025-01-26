@@ -4,6 +4,7 @@
         "stdio.h": "c",
         "colors.h": "c",
         "server_models.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "gui.h": "c"
     }
 }

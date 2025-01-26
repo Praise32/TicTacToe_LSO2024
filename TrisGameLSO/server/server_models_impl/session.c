@@ -37,63 +37,6 @@ void setup_server_socket(int server_port, int *socket_fd) {
     printf("Server in ascolto sulla porta %d...\n", server_port);
 }
 
-// Accetta connessioni e crea un thread per ogni cliente
-void accept_connections(int socket_fd, SessionePartite *sessione) {
-    pthread_t client_thread;
-    socklen_t client_address_len;
-    int new_socket_fd;
-    struct sockaddr_in client_address;
-
-    while (1) {
-        client_address_len = sizeof(client_address);
-        new_socket_fd = accept(socket_fd, (struct sockaddr *)&client_address, &client_address_len);
-        if (new_socket_fd == -1) {
-            perror("Errore di accept");
-            continue;
-        }
-
-        printf("Nuova connessione da %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
-
-        // Crea un thread per gestire la connessione del client
-        if (pthread_create(&client_thread, NULL, client_handler, (void *)&new_socket_fd) != 0) {
-            perror("Errore creazione thread per client");
-            close(new_socket_fd);
-            continue;
-        }
-    }
-}
-
-// Gestione della connessione con il client
-void *client_handler(void *arg) {
-    int socket_fd = *(int *)arg;
-    char buffer[BUFFER_SIZE] = {0};
-
-    // Stacca il thread dal chiamante per gestire la connessione in modo indipendente
-    pthread_detach(pthread_self());
-
-    while (read(socket_fd, buffer, BUFFER_SIZE) > 0) {
-        // Processa il comando ricevuto dal client
-        char command[20] = {0};
-        sscanf(buffer, "%s", command);
-
-        if (strncmp(command, "CREA_PARTITA", 12) == 0) {
-            // Logica per la creazione della partita
-            // ...
-        } else if (strncmp(command, "UNISCI_PARTITA", 14) == 0) {
-            // Logica per unire un giocatore a una partita
-            // ...
-        }
-
-        // Resetta il buffer per la prossima lettura
-        memset(buffer, 0, BUFFER_SIZE);
-    }
-
-    printf("Connessione con il client chiusa.\n");
-    close(socket_fd);
-    pthread_exit(NULL);
-    return NULL;
-}
-
 // Funzioni di utilità per la sincronizzazione
 
 // Invia un messaggio al client
@@ -111,4 +54,62 @@ void receive_message(int socket_fd, char *buffer) {
     } else if (bytes_received == 0) {
         printf("Il client ha chiuso la connessione.\n");
     }
+}
+
+// Define client_handler for use across files
+void log_client_action(int client_socket, const char* action) {
+    time_t now;
+    time(&now);
+    char* date = ctime(&now);
+    date[strlen(date) - 1] = '\0';  // Remove newline
+    printf("[%s] Client %d: %s\n", date, client_socket, action);
+}
+
+void *client_handler(void *arg) {
+    ClientData *data = (ClientData *)arg;
+    int client_socket = data->client_socket;
+    SessionePartite *sessione = data->sessione;
+    char buffer[BUFFER_SIZE];
+
+    log_client_action(client_socket, "Connected");
+
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+        if (received <= 0) {
+            log_client_action(client_socket, "Disconnected");
+            break;
+        }
+
+        log_client_action(client_socket, buffer);
+
+        if (strncmp(buffer, "CREATE_GAME", 11) == 0) {
+            int game_id = crea_partita(client_socket);
+            char response[BUFFER_SIZE];
+            snprintf(response, BUFFER_SIZE, "GAME_CREATED %d", game_id);
+            send_message(client_socket, response);
+        } else if (strncmp(buffer, "JOIN_GAME", 9) == 0) {
+            int game_id;
+            sscanf(buffer + 10, "%d", &game_id);
+            if (unisci_a_partita(client_socket, game_id) == 0) {
+                send_message(client_socket, "GAME_JOINED");
+            } else {
+                send_message(client_socket, "GAME_JOIN_FAILED");
+            }
+        } else if (strncmp(buffer, "MOVE", 4) == 0) {
+            int game_id, row, col;
+            sscanf(buffer + 5, "%d %d %d", &game_id, &row, &col);
+            if (invia_mossa(client_socket, game_id, row, col) == 0) {
+                send_message(client_socket, "MOVE_ACCEPTED");
+                // Aggiorna e notifica gli altri giocatori
+                aggiorna_partita(client_socket, game_id);
+            } else {
+                send_message(client_socket, "MOVE_REJECTED");
+            }
+        }
+    }
+
+    close(client_socket);
+    free(data);
+    return NULL;
 }

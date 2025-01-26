@@ -11,6 +11,11 @@ services:
     stdin_open: true  # Mantieni l'input aperto per l'interazione
     tty: true         # Mantieni il terminale attivo
     command: ["./server", "10000", "0.0.0.0", "5"]  # Ascolta su tutte le interfacce, non solo su localhost
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   client:
     build:
@@ -18,7 +23,8 @@ services:
       dockerfile: dockerfile
     container_name: client
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     stdin_open: true  # Mantieni l'input aperto per l'interazione
     tty: true         # Mantieni il terminale attivo
-    command: ["./client", "server", "10000", "50"]  # Usa il nome del servizio del server come hosthost
+    command: ["./client", "server", "10000", "50"]  # Usa il nome del servizio del server come host

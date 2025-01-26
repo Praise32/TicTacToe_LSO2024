@@ -1,5 +1,23 @@
 # TicTacToe_LSO2024
 Progetto 1: "La partita di Tris" per il corso di laurea di Laboratorio di Sistemi Operativi 2024-2025
+
+Questo progetto è una simulazione di un gioco Tic Tac Toe multi-client, sviluppato in linguaggio C e gestito tramite un'architettura client-server. Utilizza Docker per facilitare il deploy e l'esecuzione.
+
+## Funzionalità principali
+- Gestione multi-client con sincronizzazione del server.
+- Comunicazione socket TCP.
+- Logica completa di gestione delle partite, incluse vittorie, pareggi e turni.
+
+## Struttura del progetto
+- `client/`: Contiene il codice e le implementazioni del client.
+- `server/`: Contiene il codice e le implementazioni del server.
+- `doc/`: Documentazione e istruzioni per l'utilizzo.
+
+## Come iniziare
+1. Costruisci l'ambiente con Docker.
+2. Avvia il server e connetti i client.
+3. Gioca a Tic Tac Toe!
+
 #
 
 ## Struttura del Progetto

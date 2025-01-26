@@ -47,8 +47,14 @@ typedef struct {
     pthread_mutex_t mutex_partite;
 } SessionePartite;
 
+// Struttura per la gestione dei dati del client
+typedef struct {
+    int client_socket;
+    SessionePartite *sessione;
+} ClientData;
+
 // Funzioni per la gestione dei giocatori
-int crea_giocatore(int socket_fd, char simbolo);
+Giocatore* crea_giocatore(int socket_fd, char simbolo);
 int aggiungi_giocatore_a_partita(Giocatore *giocatore, Partita *partita);
 void rimuovi_giocatore_da_partita(Giocatore *giocatore);
 

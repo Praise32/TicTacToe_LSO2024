@@ -88,3 +88,39 @@ void print_defeat_message() {
     printf("+-------------------------------------------------------+\n");
     printf("\033[0m");  // Reset colore
 }
+
+void print_loading_animation() {
+    const char *frames[] = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
+    for(int i = 0; i < 10; i++) {
+        printf("\rCaricamento %s", frames[i]);
+        fflush(stdout);
+        usleep(100000);
+    }
+    printf("\n");
+}
+
+void print_main_menu() {
+    printf("\033[1;36m");  // Cyan color
+    printf("╔════════════════════════════════╗\n");
+    printf("║         MENU PRINCIPALE        ║\n");
+    printf("╠════════════════════════════════╣\n");
+    printf("║ 1. Crea nuova partita         ║\n");
+    printf("║ 2. Unisciti a partita         ║\n");
+    printf("║ 3. Esci                       ║\n");
+    printf("╚════════════════════════════════╝\n");
+    printf("\033[0m");
+}
+
+void update_game_board(char board[3][3], int row, int col, char symbol) {
+    if(row >= 0 && row < 3 && col >= 0 && col < 3) {
+        board[row][col] = symbol;
+    }
+}
+
+void print_game_status(const char *message) {
+    printf("\033[1;33m");  // Yellow color
+    printf("╔════════════════════════════════╗\n");
+    printf("║ %-28s ║\n", message);
+    printf("╚════════════════════════════════╝\n");
+    printf("\033[0m");
+}

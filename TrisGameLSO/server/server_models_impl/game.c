@@ -4,12 +4,28 @@
 #include <pthread.h>
 #include "../server_include/server_models.h"
 
+// Dichiarazione delle funzioni utilizzate
+SessionePartite* get_sessione_partite();
+Giocatore* crea_giocatore(int socket_fd, char simbolo);
+int verifica_vittoria(Partita* partita);
+void stampa_tabellone(Partita* partita);
+int verifica_pareggio(Partita* partita);
+
 // Funzione per creare una nuova partita
 int crea_partita(int socket_fd) {
+    SessionePartite *sessione = get_sessione_partite();
+    pthread_mutex_lock(&sessione->mutex_partite);
+    
+    if (sessione->num_partite >= MAX_GAMES) {
+        pthread_mutex_unlock(&sessione->mutex_partite);
+        return -1;
+    }
+
     static int partita_counter = 1;  // Contatore per le partite
     Partita *partita = malloc(sizeof(Partita));
     if (partita == NULL) {
         perror("Errore nell'allocazione della memoria per la partita");
+        pthread_mutex_unlock(&sessione->mutex_partite);
         return -1;
     }
 
@@ -31,15 +47,15 @@ int crea_partita(int socket_fd) {
 
     printf("Partita creata con ID: %d\n", partita->id);
     // Salva la partita nella sessione delle partite attive
-    SessionePartite *sessione = // Trova la sessione delle partite attive
     sessione->partite[sessione->num_partite++] = partita;
 
+    pthread_mutex_unlock(&sessione->mutex_partite);
     return partita->id;
 }
 
 // Funzione per unire un giocatore a una partita esistente
 int unisci_a_partita(int socket_fd, int partita_id) {
-    SessionePartite *sessione = // Trova la sessione delle partite attive
+    SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
     Partita *partita = sessione->partite[partita_id];
 
     if (partita == NULL) {
@@ -68,7 +84,7 @@ int unisci_a_partita(int socket_fd, int partita_id) {
 
 // Funzione per inviare una mossa al server
 int invia_mossa(int socket_fd, int partita_id, int riga, int colonna) {
-    SessionePartite *sessione = // Trova la sessione delle partite attive
+    SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
     Partita *partita = sessione->partite[partita_id];
 
     if (partita == NULL || riga < 0 || riga > 2 || colonna < 0 || colonna > 2) {
@@ -101,7 +117,7 @@ int invia_mossa(int socket_fd, int partita_id, int riga, int colonna) {
 
 // Funzione per aggiornare lo stato della partita
 int aggiorna_partita(int socket_fd, int partita_id) {
-    SessionePartite *sessione = // Trova la sessione delle partite attive
+    SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
     Partita *partita = sessione->partite[partita_id];
 
     if (partita == NULL) {
@@ -125,7 +141,7 @@ int aggiorna_partita(int socket_fd, int partita_id) {
 
 // Funzione per terminare una partita
 void termina_partita(int partita_id) {
-    SessionePartite *sessione = // Trova la sessione delle partite attive
+    SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
     Partita *partita = sessione->partite[partita_id];
 
     if (partita != NULL) {
@@ -189,7 +205,7 @@ void simula_partita(int socket_fd_giocatore_1, int socket_fd_giocatore_2) {
         aggiorna_partita(socket_fd, partita_id);  // Aggiorniamo lo stato della partita
 
         // Verifica se la partita è finita (vittoria o pareggio)
-        SessionePartite *sessione = // Trova la sessione delle partite attive
+        SessionePartite *sessione = get_sessione_partite(); // Trova la sessione delle partite attive
         Partita *partita = sessione->partite[partita_id];
 
         if (partita->stato == 2) {  // Stato 2 indica che la partita è terminata
@@ -208,37 +224,68 @@ void simula_partita(int socket_fd_giocatore_1, int socket_fd_giocatore_2) {
     termina_partita(partita_id);  // Termina la partita
 }
 
-// Funzione per stampare il messaggio di benvenuto per il gioco del Tris
-void print_welcome_message(int num_players, int server_port) {
-    // Stampa un'intestazione colorata e formattata
-    printf(CYAN_COLOR);
-    printf("========================================\n");
-    printf("        WELCOME TO THE TIC-TAC-TOE     \n");
-    printf("========================================\n");
-    printf(RESET_COLOR);
+// Add missing function definitions
 
-    // Dettagli sul numero di giocatori e la porta del server
-    printf(BLUE_COLOR);
-    printf("🎮 Number of players in the game: %d\n", num_players);
-    printf("💻 The server is listening on port: %d\n", server_port);
-    printf(RESET_COLOR);
+int verifica_vittoria(Partita* partita) {
+    // Controllo righe
+    for (int i = 0; i < 3; i++) {
+        if (partita->board[i][0] != ' ' &&
+            partita->board[i][0] == partita->board[i][1] &&
+            partita->board[i][1] == partita->board[i][2]) {
+            return 1;
+        }
+    }
 
-    // Messaggio finale
-    printf(GREEN_COLOR);
-    printf("========================================\n");
-    printf("         Good luck and have fun!        \n");
-    printf("========================================\n\n");
-    printf(RESET_COLOR);
-}
+    // Controllo colonne
+    for (int j = 0; j < 3; j++) {
+        if (partita->board[0][j] != ' ' &&
+            partita->board[0][j] == partita->board[1][j] &&
+            partita->board[1][j] == partita->board[2][j]) {
+            return 1;
+        }
+    }
 
+    // Controllo diagonali
+    if (partita->board[0][0] != ' ' &&
+        partita->board[0][0] == partita->board[1][1] &&
+        partita->board[1][1] == partita->board[2][2]) {
+        return 1;
+    }
 
-// Funzione main per eseguire la simulazione
-int main() {
-    int socket_fd_giocatore_1 = 1;  // ID socket fittizio per Giocatore 1
-    int socket_fd_giocatore_2 = 2;  // ID socket fittizio per Giocatore 2
-
-    // Simula la partita tra i due giocatori
-    simula_partita(socket_fd_giocatore_1, socket_fd_giocatore_2);
+    if (partita->board[0][2] != ' ' &&
+        partita->board[0][2] == partita->board[1][1] &&
+        partita->board[1][1] == partita->board[2][0]) {
+        return 1;
+    }
 
     return 0;
+}
+
+int verifica_pareggio(Partita* partita) {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (partita->board[i][j] == ' ') {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+void stampa_tabellone(Partita* partita) {
+    printf("\n");
+    for (int i = 0; i < 3; i++) {
+        printf(" %c | %c | %c \n", 
+            partita->board[i][0],
+            partita->board[i][1],
+            partita->board[i][2]);
+        if (i < 2) printf("---+---+---\n");
+    }
+    printf("\n");
+}
+
+// Add the definition for get_sessione_partite
+SessionePartite* get_sessione_partite() {
+    static SessionePartite sessione;
+    return &sessione;
 }
