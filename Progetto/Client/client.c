@@ -1,0 +1,209 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define SERVER_IP "127.0.0.1"
+#define SERVER_PORT 12345
+#define BUFFER_SIZE 1024
+#define CLEAR_SCREEN() printf("\033[H\033[J")
+#define MAX_RETRIES 3
+
+// Dichiarazioni delle funzioni
+void handle_lobby(int socket_fd);
+void start_game(int socket_fd);
+void play_again_menu(int socket_fd);
+int get_valid_menu_choice(int min, int max);
+int get_valid_move(char *input);
+
+// Funzione per validare l'input del menu
+int get_valid_menu_choice(int min, int max) {
+    char input[BUFFER_SIZE];
+    int choice;
+    int retries = 0;
+
+    while (retries < MAX_RETRIES) {
+        printf("\nScelta (1-%d): ", max);
+        if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
+            continue;
+        }
+
+        if (sscanf(input, "%d", &choice) == 1 && choice >= min && choice <= max) {
+            return choice;
+        }
+
+        printf("\nScelta non valida. Per favore inserisci un numero tra %d e %d\n", min, max);
+        retries++;
+    }
+    return -1;
+}
+
+// Funzione per validare l'input della mossa
+int get_valid_move(char *input) {
+    int row, col;
+    while (1) {
+        printf("\nInserisci la tua mossa (riga,colonna) [0-2]: ");
+        if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
+            continue;
+        }
+        
+        if (sscanf(input, "%d,%d", &row, &col) != 2) {
+            printf("\nFormato non valido! Usa: numero,numero\n");
+            continue;
+        }
+        
+        if (row < 0 || row > 2 || col < 0 || col > 2) {
+            printf("\nPosizione non valida! Usa numeri tra 0 e 2\n");
+            continue;
+        }
+        
+        return 1;
+    }
+}
+
+void play_again_menu(int socket_fd) {
+    CLEAR_SCREEN();
+    printf("\n=== Partita Terminata ===\n");
+    printf("1. Gioca ancora\n");
+    printf("2. Esci\n");
+
+    int choice = get_valid_menu_choice(1, 2);
+    if (choice == 1) {
+        handle_lobby(socket_fd);
+    } else {
+        exit(EXIT_SUCCESS);
+    }
+}
+
+void start_game(int socket_fd) {
+    char buffer[BUFFER_SIZE];
+    char input[BUFFER_SIZE];
+    
+    while (1) {
+        // Ricevi stato del gioco
+        memset(buffer, 0, BUFFER_SIZE);
+        if (recv(socket_fd, buffer, BUFFER_SIZE - 1, 0) <= 0) {
+            printf("Connessione al server persa.\n");
+            exit(EXIT_FAILURE);
+        }
+        CLEAR_SCREEN();
+        printf("%s", buffer);  // Mostra il tabellone
+
+        // Ricevi messaggio del turno
+        memset(buffer, 0, BUFFER_SIZE);
+        if (recv(socket_fd, buffer, BUFFER_SIZE - 1, 0) <= 0) {
+            printf("Connessione al server persa.\n");
+            exit(EXIT_FAILURE);
+        }
+        printf("%s", buffer);
+
+        if (strstr(buffer, "vinto") || strstr(buffer, "Pareggio") || strstr(buffer, "disconnesso")) {
+            printf("\nPremi INVIO per continuare...");
+            getchar();
+            play_again_menu(socket_fd);
+            break;
+        }
+
+        if (strstr(buffer, "tuo turno")) {
+            while (!get_valid_move(input)) {
+                continue;
+            }
+            send(socket_fd, input, strlen(input), 0);
+        } else {
+            // Aspetta INVIO e invia un newline al server
+            getchar();
+            send(socket_fd, "\n", 1, 0);
+        }
+    }
+}
+
+void handle_lobby(int socket_fd) {
+    char buffer[BUFFER_SIZE];
+    char input[BUFFER_SIZE];
+    
+    while (1) {
+        // Ricevi messaggio dal server
+        memset(buffer, 0, BUFFER_SIZE);
+        if (recv(socket_fd, buffer, BUFFER_SIZE, 0) <= 0) {
+            printf("Connessione al server persa.\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        CLEAR_SCREEN();
+        printf("%s", buffer);
+        
+        // Se è richiesto un input
+        if (strstr(buffer, "Scegli") || strstr(buffer, "Premi INVIO") || 
+            strstr(buffer, "nome della partita") || strstr(buffer, "numero della partita")) {
+            
+            fgets(input, BUFFER_SIZE, stdin);
+            if (send(socket_fd, input, strlen(input), 0) <= 0) {
+                printf("Errore nell'invio dei dati al server.\n");
+                exit(EXIT_FAILURE);
+            }
+            
+            // Se stiamo attendendo una partita
+            if (strstr(buffer, "nome della partita")) {
+                memset(buffer, 0, BUFFER_SIZE);
+                recv(socket_fd, buffer, BUFFER_SIZE, 0);
+                printf("%s", buffer);
+                
+                if (strstr(buffer, "In attesa")) {
+                    printf("\nIn attesa di un avversario... (Ctrl+C per annullare)\n");
+                    recv(socket_fd, buffer, BUFFER_SIZE, 0);
+                    break;
+                }
+            }
+            
+            // Se ci siamo uniti a una partita
+            if (strstr(buffer, "numero della partita")) {
+                memset(buffer, 0, BUFFER_SIZE);
+                recv(socket_fd, buffer, BUFFER_SIZE, 0);
+                printf("%s", buffer);
+                
+                if (strstr(buffer, "partita sta per iniziare")) {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    int socket_fd;
+    struct sockaddr_in server_address;
+
+    // Creazione del socket
+    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_fd == -1) {
+        perror("Errore nella creazione del socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Connessione al server
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(SERVER_PORT);
+    inet_pton(AF_INET, SERVER_IP, &server_address.sin_addr);
+
+    if (connect(socket_fd, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
+        perror("Errore nella connessione al server");
+        close(socket_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    // Imposta il socket come non bloccante
+    int flags = 1;
+    setsockopt(socket_fd, SOL_SOCKET, SO_KEEPALIVE, &flags, sizeof(flags));
+
+    printf("Connessione al server riuscita!\n");
+    sleep(1);
+    
+    while (1) {
+        handle_lobby(socket_fd);
+        start_game(socket_fd);
+    }
+
+    close(socket_fd);
+    return 0;
+}

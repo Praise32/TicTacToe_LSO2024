@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server
+    ports:
+      - "12345:12345"
+    networks:
+      - progetto_net
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    depends_on:
+      - server
+    networks:
+      - progetto_net
+    stdin_open: true
+    tty: true
+    command: ["./client"]
+
+networks:
+  progetto_net:
+    driver: bridge

@@ -1,0 +1,11 @@
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk update && apk add --no-cache gcc make libc-dev linux-headers
+
+COPY client.c /app/
+
+RUN gcc client.c -o client
+
+CMD ["./client"]

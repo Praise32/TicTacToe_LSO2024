@@ -1,0 +1,17 @@
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk update && apk add --no-cache gcc make libc-dev linux-headers
+
+# Copia i file nel container, mantenendo la struttura delle directory
+COPY server.c /app/
+COPY Server_impl/game_manager.c /app/Server_impl/
+COPY Server_include/game_logic.h /app/Server_include/
+
+# Compila il server
+RUN gcc -pthread server.c Server_impl/game_manager.c -o server
+
+EXPOSE 12345
+
+CMD ["./server"]
