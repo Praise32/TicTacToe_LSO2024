@@ -116,6 +116,7 @@ void start_game(int socket_fd) {
         }
         printf("%s", buffer);
 
+        // Se la partita è finita, gestisci il risultato
         if (strstr(buffer, "vinto") || strstr(buffer, "Pareggio") || strstr(buffer, "disconnesso")) {
             printf("\nPremi INVIO per continuare...");
             getchar();
@@ -123,6 +124,7 @@ void start_game(int socket_fd) {
             break;
         }
 
+        // Se è il turno del giocatore, chiedi la mossa
         if (strstr(buffer, "tuo turno")) {
             while (1) {
                 memset(input, 0, BUFFER_SIZE);
@@ -132,15 +134,15 @@ void start_game(int socket_fd) {
                 }
             }
         } else {
-            // Aspetta INVIO, ma senza mandare newline vuoti al server
-            printf("\nPremi INVIO per continuare...");
-            fgets(input, BUFFER_SIZE, stdin);
+            // Aspetta INVIO, ma senza inviare newline vuoti al server
+            // Solo quando non è il turno del giocatore
             if (strlen(input) > 1) { // Evita di inviare solo "\n"
                 send(socket_fd, input, strlen(input), 0);
             }
         }
     }
 }
+
 
 void handle_lobby(int socket_fd) {
     char buffer[BUFFER_SIZE];
