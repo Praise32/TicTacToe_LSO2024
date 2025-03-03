@@ -1,0 +1,49 @@
+# Binari e oggetti compilati
+*.o
+*.out
+*.exe
+*.a
+*.so
+*.dll
+
+# File temporanei
+*.swp
+*.swo
+*.bak
+*.tmp
+*.log
+
+# Impostazioni di Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Makefile e CMake generati
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# File di sistema di macOS
+.DS_Store
+._*
+
+# File di sistema di Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+ehthumbs.db
+
+# Documenti e file di testo da ignorare
+*.pdf
+*.doc
+*.docx
+*.odt
+*.rtf
+
+# File di dump o core
+core
+*.core
+*.stackdump
+
+# Altri file inutili
+*.~*
