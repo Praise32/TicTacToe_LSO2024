@@ -138,6 +138,7 @@ void *handle_client_connection(void *arg) {
     int client_socket = *(int *)arg;
     free(arg);
     char buffer[BUFFER_SIZE];
+    char msg[BUFFER_SIZE];
     
     // Invia messaggio di benvenuto e attende conferma
     send_to_player(client_socket, "\nBenvenuto al gioco del Tris!\nPremi INVIO per continuare...");
@@ -175,8 +176,9 @@ void *handle_client_connection(void *arg) {
             int game_id = create_game_session(&game_lobby, buffer, client_socket);
             
             if (game_id >= 0) {
-                char msg[BUFFER_SIZE];
-                sprintf(msg, "\nPartita '%s' creata! ID: %d\nIn attesa di un avversario...\n", buffer, game_id);
+                // Usa snprintf invece di sprintf per evitare overflow
+                snprintf(msg, BUFFER_SIZE - 1, "\nPartita '%.*s' creata! ID: %d\nIn attesa di un avversario...\n", 
+                        MAX_GAME_NAME - 1, buffer, game_id);
                 send_to_player(client_socket, msg);
                 
                 while (1) {
