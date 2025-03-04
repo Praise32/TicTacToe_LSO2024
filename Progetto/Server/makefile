@@ -1,11 +1,21 @@
-server: server.o game_manager.o
-    gcc -pthread server.o game_manager.o -o server
+CC = gcc
+CFLAGS = -Wall -pthread
+INCLUDES = -IServer_include
 
-server.o: server.c Server_include/game_logic.h
-    gcc -c -pthread server.c -o server.o
+SRCS = server.c \
+       Server_impl/game_manager.c \
+       Server_impl/lobby.c
 
-game_manager.o: Server_impl/game_manager.c Server_include/game_logic.h
-    gcc -c -pthread Server_impl/game_manager.c -o game_manager.o
+OBJS = $(SRCS:.c=.o)
+TARGET = server
+
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) $(CFLAGS) -o $(TARGET)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-    rm -f server.o game_manager.o server
+	rm -f $(OBJS) $(TARGET)
+
+.PHONY: clean

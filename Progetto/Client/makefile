@@ -1,8 +1,17 @@
-client: client.o
-    gcc client.o -o client
+CC = gcc
+CFLAGS = -Wall
 
-client.o: client.c
-    gcc -c client.c -o client.o
+SRCS = client.c
+OBJS = $(SRCS:.c=.o)
+TARGET = client
+
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) $(CFLAGS) -o $(TARGET)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-    rm -f client.o client
+	rm -f $(OBJS) $(TARGET)
+
+.PHONY: clean
