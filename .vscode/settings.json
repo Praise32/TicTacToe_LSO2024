@@ -4,6 +4,11 @@
         "stdio.h": "c",
         "colors.h": "c",
         "server_models.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "game_logic.h": "c",
+        "lobby.h": "c",
+        "structure.h": "c",
+        "string.h": "c",
+        "handle.h": "c"
     }
 }

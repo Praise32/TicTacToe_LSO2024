@@ -38,6 +38,7 @@ int get_valid_menu_choice(int min, int max) {
     }
     return -1;
 }
+
 // Funzione per ottenere la mossa del client
 int get_valid_move(char *input) {
     int row, col;
@@ -71,14 +72,6 @@ int get_valid_move(char *input) {
         return 1; // Input valido
     }
 }
-
-
-
-
-
-
-
-
 
 void play_again_menu(int socket_fd) {
     CLEAR_SCREEN();

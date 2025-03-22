@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "../Server_include/structure.h"
 #include "../Server_include/game_logic.h"
 
 // Inizializza un tabellone vuoto

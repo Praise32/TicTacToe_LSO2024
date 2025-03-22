@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include "../Server_include/structure.h"
 #include "../Server_include/lobby.h"
 
 void init_lobby(Lobby *lobby) {
