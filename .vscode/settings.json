@@ -9,6 +9,7 @@
         "lobby.h": "c",
         "structure.h": "c",
         "string.h": "c",
-        "handle.h": "c"
+        "handle.h": "c",
+        "funzioni.h": "c"
     }
 }

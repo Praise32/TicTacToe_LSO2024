@@ -35,87 +35,136 @@ void *handle_game(void *arg) {
     char buffer[BUFFER_SIZE];
     int current_player_index = 0;
     char board_status[BUFFER_SIZE];
+    int rematch = 1;  // Flag per il ciclo di rematch
 
-    // Inizializza il tabellone
-    initialize_board(game->board);
-    game->current_player = 'X';
+    while (rematch) {  // Loop esterno per gestire i rematch
+        // Inizializza il tabellone
+        initialize_board(game->board);
+        game->current_player = 'X';
+        current_player_index = 0;
 
-    // Invia messaggio iniziale ai giocatori
-    send_to_player(game->player_sockets[0], "\nSei il giocatore X\n");
-    send_to_player(game->player_sockets[1], "\nSei il giocatore O\n");
+        // Invia messaggio iniziale ai giocatori
+        send_to_player(game->player_sockets[0], "\nSei il giocatore X\n");
+        send_to_player(game->player_sockets[1], "\nSei il giocatore O\n");
 
-    while (1) {
-        memset(buffer, 0, sizeof(buffer));
-        memset(board_status, 0, sizeof(board_status));
+        while (1) {
+            memset(buffer, 0, sizeof(buffer));
+            memset(board_status, 0, sizeof(board_status));
 
-        // Prepara il tabellone
-        sprintf(board_status, "\n=== Stato Partita ===\n");
-        for (int i = 0; i < 3; i++) {
-            strcat(board_status, "\n");
-            for (int j = 0; j < 3; j++) {
-                char cell = game->board[i][j] == ' ' ? '.' : game->board[i][j];
-                sprintf(buffer, " %c ", cell);
-                strcat(board_status, buffer);
-                if (j < 2) strcat(board_status, "|");
+            // Prepara il tabellone
+            sprintf(board_status, "\n=== Stato Partita ===\n");
+            for (int i = 0; i < 3; i++) {
+                strcat(board_status, "\n");
+                for (int j = 0; j < 3; j++) {
+                    char cell = game->board[i][j] == ' ' ? '.' : game->board[i][j];
+                    sprintf(buffer, " %c ", cell);
+                    strcat(board_status, buffer);
+                    if (j < 2) strcat(board_status, "|");
+                }
+                if (i < 2) strcat(board_status, "\n---|---|---");
             }
-            if (i < 2) strcat(board_status, "\n---|---|---");
-        }
-        strcat(board_status, "\n\n");
+            strcat(board_status, "\n\n");
 
-        // Invia stato attuale a entrambi i giocatori
+            // Invia stato attuale a entrambi i giocatori
+            for (int i = 0; i < 2; i++) {
+                send_to_player(game->player_sockets[i], board_status);
+                if (i == current_player_index) {
+                    send_to_player(game->player_sockets[i], "\nÈ il tuo turno! Inserisci mossa (riga,colonna): ");
+                } else {
+                    send_to_player(game->player_sockets[i], "\nIn attesa della mossa dell'avversario... (Premi INVIO per aggiornare)\n");
+                }
+            }
+
+            // Gestisci la mossa del giocatore corrente
+            if (recv(game->player_sockets[current_player_index], buffer, sizeof(buffer), 0) <= 0) {
+                send_to_player(game->player_sockets[1 - current_player_index], "\nL'avversario si è disconnesso. Vittoria!\n");
+                break;
+            }
+
+            // Se è il giocatore non attivo che preme INVIO, continua il ciclo
+            if (buffer[0] == '\n' && strlen(buffer) <= 2) {
+                continue;
+            }
+
+            // Parse della mossa (formato: "row,col")
+            int row, col;
+            if (sscanf(buffer, "%d,%d", &row, &col) != 2 || !is_valid_move(game->board, row, col)) {
+                send_to_player(game->player_sockets[current_player_index], "Mossa non valida! Riprova.\n");
+                continue;
+            }
+
+            // Applica la mossa
+            make_move(game->board, row, col, game->current_player);
+
+            // Controlla lo stato del gioco
+            char winner = check_winner(game->board);
+            if (winner != ' ' || is_draw(game->board)) {
+                // Invia stato finale
+                send_to_player(game->player_sockets[0], board_status);
+                send_to_player(game->player_sockets[1], board_status);
+                
+                if (winner != ' ') {
+                    sprintf(buffer, "\nIl giocatore %c ha vinto!\n", winner);
+                } else {
+                    strcpy(buffer, "\nPareggio!\n");
+                }
+                send_to_player(game->player_sockets[0], buffer);
+                send_to_player(game->player_sockets[1], buffer);
+                break;
+            }
+
+            // Passa al prossimo giocatore
+            game->current_player = (game->current_player == 'X') ? 'O' : 'X';
+            current_player_index = 1 - current_player_index;
+        }
+
+        // Dopo la fine della partita, gestisci il rematch
+        int choices[2] = {0, 0};
+        int responses = 0;
+        int winner_index = -1;
+
+        // Determina il vincitore
+        if (check_winner(game->board) != ' ') {
+            winner_index = (game->current_player == 'X') ? 0 : 1;
+        }
+
+        // Ricevi le scelte dei giocatori
         for (int i = 0; i < 2; i++) {
-            send_to_player(game->player_sockets[i], board_status);
-            if (i == current_player_index) {
-                send_to_player(game->player_sockets[i], "\nÈ il tuo turno! Inserisci mossa (riga,colonna): ");
-            } else {
-                send_to_player(game->player_sockets[i], "\nIn attesa della mossa dell'avversario... (Premi INVIO per aggiornare)\n");
+            memset(buffer, 0, BUFFER_SIZE);
+            if (recv(game->player_sockets[i], buffer, BUFFER_SIZE - 1, 0) > 0) {
+                choices[i] = atoi(buffer);
+                responses++;
             }
         }
 
-        // Gestisci la mossa del giocatore corrente
-        if (recv(game->player_sockets[current_player_index], buffer, sizeof(buffer), 0) <= 0) {
-            send_to_player(game->player_sockets[1 - current_player_index], "\nL'avversario si è disconnesso. Vittoria!\n");
-            break;
-        }
-
-        // Se è il giocatore non attivo che preme INVIO, continua il ciclo
-        if (buffer[0] == '\n' && strlen(buffer) <= 2) {
-            continue;
-        }
-
-        // Parse della mossa (formato: "row,col")
-        int row, col;
-        if (sscanf(buffer, "%d,%d", &row, &col) != 2 || !is_valid_move(game->board, row, col)) {
-            send_to_player(game->player_sockets[current_player_index], "Mossa non valida! Riprova.\n");
-            continue;
-        }
-
-        // Applica la mossa
-        make_move(game->board, row, col, game->current_player);
-
-        // Controlla lo stato del gioco
-        char winner = check_winner(game->board);
-        if (winner != ' ' || is_draw(game->board)) {
-            // Invia stato finale
-            send_to_player(game->player_sockets[0], board_status);
-            send_to_player(game->player_sockets[1], board_status);
-            
-            if (winner != ' ') {
-                sprintf(buffer, "\nIl giocatore %c ha vinto!\n", winner);
+        if (responses == 2) {
+            if (winner_index != -1) {
+                // Solo il vincitore decide
+                if (choices[winner_index] == 1) {
+                    send_to_player(game->player_sockets[winner_index], "wait");
+                    send_to_player(game->player_sockets[1 - winner_index], "exit");
+                    pthread_mutex_lock(&lobby_mutex);
+                    create_game_session(&game_lobby, "Rematch", game->player_sockets[winner_index]);
+                    pthread_mutex_unlock(&lobby_mutex);
+                } else {
+                    send_to_player(game->player_sockets[0], "exit");
+                    send_to_player(game->player_sockets[1], "exit");
+                }
             } else {
-                strcpy(buffer, "\nPareggio!\n");
+                // In caso di pareggio, entrambi decidono
+                if (choices[0] == 1 && choices[1] == 1) {
+                    send_to_player(game->player_sockets[0], "continue");
+                    send_to_player(game->player_sockets[1], "continue");
+                    continue;  // Torna all'inizio del loop esterno
+                } else {
+                    send_to_player(game->player_sockets[0], "exit");
+                    send_to_player(game->player_sockets[1], "exit");
+                }
             }
-            send_to_player(game->player_sockets[0], buffer);
-            send_to_player(game->player_sockets[1], buffer);
-            break;
+            rematch = 0;  // Termina il loop di rematch
         }
-
-        // Passa al prossimo giocatore
-        game->current_player = (game->current_player == 'X') ? 'O' : 'X';
-        current_player_index = 1 - current_player_index;
     }
 
-    // Dopo la fine della partita, non chiudiamo le connessioni
     free(game);
     pthread_exit(NULL);
 }

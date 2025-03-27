@@ -72,15 +72,18 @@ int main() {
         printf("Nuovo client connesso da %s\n", client_ip);
         
         pthread_t client_thread;
+        //Migliore gestione dei thread con pthread_attr_t
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
         int *client_sock = malloc(sizeof(int));
         *client_sock = client_socket;
         
-        if (pthread_create(&client_thread, NULL, handle_client_connection, client_sock) != 0) {
+        if (pthread_create(&client_thread, &attr, handle_client_connection, client_sock) != 0) {
             perror("Errore nella creazione del thread");
             free(client_sock);
             close(client_socket);
         }
-        pthread_detach(client_thread);
     }
 
     close(server_socket);
