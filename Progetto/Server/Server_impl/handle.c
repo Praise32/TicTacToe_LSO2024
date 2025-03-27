@@ -29,7 +29,7 @@ void display_server_status(int num_clients, int num_games) {
 }
 
 
-// Funzione per gestire una singola partita
+/// Funzione per gestire una singola partita
 void *handle_game(void *arg) {
     Game *game = (Game *)arg;
     char buffer[BUFFER_SIZE];
@@ -249,7 +249,7 @@ void *handle_client_connection(void *arg) {
                 
                 char games_list[BUFFER_SIZE] = "\nPartite disponibili:\n\n";
                 list_games(&game_lobby, games_list + strlen(games_list));
-                strcat(games_list, "\nScegli il numero della partita (0-9) o 'q' per tornare al menu: ");
+                strcat(games_list, "\nDammi il numero della partita (0-9) o 'q' per tornare al menu: ");
                 send_to_player(client_socket, games_list);
                 pthread_mutex_unlock(&lobby_mutex);
                 

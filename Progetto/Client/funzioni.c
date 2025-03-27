@@ -33,7 +33,7 @@ int get_valid_move(char *input) {
     int row, col;
     while (1) {
         printf("\nInserisci la tua mossa (riga,colonna) [0-2]: ");
-        
+
         if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
             continue;
         }
@@ -52,7 +52,7 @@ int get_valid_move(char *input) {
             printf("\nFormato non valido! Usa: numero,numero\n");
             continue;
         }
-        
+
         if (row < 0 || row > 2 || col < 0 || col > 2) {
             printf("\nPosizione non valida! Usa numeri tra 0 e 2\n");
             continue;
@@ -67,7 +67,7 @@ int get_valid_move(char *input) {
 // Funzione per ottenere la mossa del client
 int get_valid_match(char *input) {
     while (1) {
-        printf("\nInserisci la tua mossa (riga,colonna) [0-2]: ");
+        //printf("\nInserisci la tua mossa (riga,colonna) [0-2]: ");
         
         if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
             continue;
@@ -76,19 +76,14 @@ int get_valid_match(char *input) {
         // Rimuove i caratteri di nuova linea (\n o \r\n) se presenti
         input[strcspn(input, "\r\n")] = 0;
 
-        // Se l'input è vuoto, invia "1" al server per chiedere il tabellone
-        if (strlen(input) == 0) {
-            strcpy(input, "1"); // Imposta "1" per il tabellone
-            return 0; // Ritorna 0 per segnalare che è stato premuto INVIO
-        }
 
-        if (strcmp(input, "1") == 0 || strcmp(input, "2") == 0 || strcmp(input, "3") == 0 || strcmp(input, "4") == 0 || strcmp(input, "5") == 0 || strcmp(input, "6") == 0 || strcmp(input, "7") == 0 || strcmp(input, "8") == 0 || strcmp(input, "9") == 0)
-        {
+        if (strcmp(input, "0") == 0 || strcmp(input, "1") == 0 || strcmp(input, "2") == 0 || strcmp(input, "3") == 0 || strcmp(input, "4") == 0 || strcmp(input, "5") == 0 || strcmp(input, "6") == 0 || strcmp(input, "7") == 0 || strcmp(input, "8") == 0 || strcmp(input, "9") == 0 
+           || strcmp(input, "Q") == 0 || strcmp(input, "q") == 0) {
             return 1; // Input valido
         }
-        
+        printf("\nFormato non valido! Usa: numero tra 0 e 9 oppure 'q' per tornare al menu\n");
+        return 0;
 
-        return 1; // Input valido
     }
 }
 
@@ -178,6 +173,7 @@ void start_game(int socket_fd) {
     }
 }
 
+
 void handle_menu(int socket_fd) {
     char buffer[BUFFER_SIZE];
     char input[BUFFER_SIZE];
@@ -195,7 +191,8 @@ void handle_menu(int socket_fd) {
         
         // Se è richiesto un input
         if (strstr(buffer, "Scegli") || strstr(buffer, "Premi INVIO") || 
-            strstr(buffer, "nome della partita") || strstr(buffer, "numero della partita")) {
+            strstr(buffer, "nome della partita")) {
+
             
             fgets(input, BUFFER_SIZE, stdin);
             if (send(socket_fd, input, strlen(input), 0) <= 0) {
@@ -215,17 +212,24 @@ void handle_menu(int socket_fd) {
                     break;
                 }
             }
-            
-            // Se ci siamo uniti a una partita
-            if (strstr(buffer, "numero della partita")) {
-                memset(buffer, 0, BUFFER_SIZE);
-                recv(socket_fd, buffer, BUFFER_SIZE, 0);
-                printf("%s", buffer);
-                
-                if (strstr(buffer, "partita sta per iniziare")) {
+        }
+
+        if (strstr(buffer, "numero della partita")) { 
+            while (1)
+            {
+
+                if (get_valid_match(input)) {
+                    send(socket_fd, input, strlen(input), 0);
                     break;
-                }
+                }   
             }
         }
+
+        if (strstr(buffer, "partita sta per iniziare")) {
+            break;
+        }
+
+
+        
     }
 }
